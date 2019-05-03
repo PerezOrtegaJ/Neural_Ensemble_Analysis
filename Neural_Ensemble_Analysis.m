@@ -2125,6 +2125,8 @@ function popSortingNeurons_Callback(hObject, ~, handles)
                 end
             end
             experiment.Plot.Correlation=correlation;
+        case 'structure'
+            cell_indices = experiment.Plot.IDstructure;
         otherwise
             by_group=strsplit(sorting_method,' ');
             group=str2num(by_group{2});
@@ -2604,74 +2606,86 @@ function btnPlotNetworks_Callback(hObject,~,handles)
     % Read experiment
     experiment = Read_Experiment(handles);
     name = strrep(experiment.Raster.Name,'_','-');
-    n = experiment.Raster.Neurons;
-    groups = experiment.Clustering.Groups;
-    groups_to_plot=experiment.Clustering.GroupsToPlot;
-    network = experiment.Network.Network;
     network_th = experiment.Network.Significant;
-    core_network = experiment.Network.CoreNetwork;
-    core_network_th = experiment.Network.CoreSignificant;
-    
-    try
-        cell_indices = experiment.Plot.CurrentIndices;
-    catch
-        neurons = experiment.Raster.Neurons;
-        cell_indices = 1:neurons;
-        current_sorting = 'no sorting';
-        
-        % Write experiment
-        experiment.Plot.CurrentIndices = cell_indices;
-        experiment.Plot.CurrentSorting = current_sorting;
-        Write_Experiment(handles,experiment);
-    end
-    
-    % Get coordinates of network
-%     xy = Get_Force_XY(network);
-    xy = Get_Circular_XY(n);
-        
-    % Plot network
     save_plot=get(handles.chkSavePlot,'value');
-    
-    edge_color = [0.5 0.5 0.5];
-    node_color = [0.8 0.8 0.8];
-    network_plot = network.*network_th;
-    Plot_Adjacencies_And_Network(network(cell_indices,cell_indices),...
-        network_plot(cell_indices,cell_indices),['All networks (union) - ' name],...
-        xy,node_color,edge_color,save_plot)
-    lims_x = get(gca,'xlim');
-    lims_y = get(gca,'ylim');
-    
-    % Plot core network
-    network_plot = core_network.*core_network_th;
-    Plot_Adjacencies_And_Network(core_network(cell_indices,cell_indices),...
-        network_plot(cell_indices,cell_indices),...
-        ['Core network (intersection) - ' name],...
-        xy,node_color,edge_color,save_plot)  
-    xlim(lims_x)
-    ylim(lims_y)
-    
-    % Plot network of each state
-    colors = Read_Colors(groups);
-    for i=1:groups
-        if(ismember(i,groups_to_plot))
-            state_network = experiment.Network.State{i};
-            state_network_th = experiment.Network.StateSignificant{i};
-
-            network_plot = state_network.*state_network_th;
-            Plot_Adjacencies_And_Network(state_network(cell_indices,cell_indices),...
-            network_plot(cell_indices,cell_indices),...
-            ['State ' num2str(i) ' network - ' name],...
-            xy,colors(i,:),edge_color,save_plot)
-
-            xlim(lims_x)
-            ylim(lims_y)
-        end
-    end
+%     n = experiment.Raster.Neurons;
+%     groups = experiment.Clustering.Groups;
+%     groups_to_plot=experiment.Clustering.GroupsToPlot;
+%     network = experiment.Network.Network;
+%     core_network = experiment.Network.CoreNetwork;
+%     core_network_th = experiment.Network.CoreSignificant;
+%     
+%     try
+%         cell_indices = experiment.Plot.CurrentIndices;
+%     catch
+%         neurons = experiment.Raster.Neurons;
+%         cell_indices = 1:neurons;
+%         current_sorting = 'no sorting';
+%         
+%         % Write experiment
+%         experiment.Plot.CurrentIndices = cell_indices;
+%         experiment.Plot.CurrentSorting = current_sorting;
+%         Write_Experiment(handles,experiment);
+%     end
+%     
+%     % Get coordinates of network
+% %     xy = Get_Force_XY(network);
+%     xy = Get_Circular_XY(n);
+%         
+%     
+%     
+%     edge_color = [0.5 0.5 0.5];
+%     node_color = [0.8 0.8 0.8];
+%     network_plot = network.*network_th;
+%     Plot_Adjacencies_And_Network(network(cell_indices,cell_indices),...
+%         network_plot(cell_indices,cell_indices),['All networks (union) - ' name],...
+%         xy,node_color,edge_color,save_plot)
+%     lims_x = get(gca,'xlim');
+%     lims_y = get(gca,'ylim');
+%     
+%     % Plot core network
+%     network_plot = core_network.*core_network_th;
+%     Plot_Adjacencies_And_Network(core_network(cell_indices,cell_indices),...
+%         network_plot(cell_indices,cell_indices),...
+%         ['Core network (intersection) - ' name],...
+%         xy,node_color,edge_color,save_plot)  
+%     xlim(lims_x)
+%     ylim(lims_y)
+%     
+%     % Plot network of each state
+%     colors = Read_Colors(groups);
+%     for i=1:groups
+%         if(ismember(i,groups_to_plot))
+%             state_network = experiment.Network.State{i};
+%             state_network_th = experiment.Network.StateSignificant{i};
+% 
+%             network_plot = state_network.*state_network_th;
+%             Plot_Adjacencies_And_Network(state_network(cell_indices,cell_indices),...
+%             network_plot(cell_indices,cell_indices),...
+%             ['State ' num2str(i) ' network - ' name],...
+%             xy,colors(i,:),edge_color,save_plot)
+% 
+%             xlim(lims_x)
+%             ylim(lims_y)
+%         end
+%     end
     %btnPlotRandomNetworks_Callback(hObject,[], handles)
     
     [~, xy_colors, id, structure] = Get_XY_Ensembles(experiment.Network.StateSignificant);
     Plot_Ensembles(network_th(id,id),[],xy_colors,structure,name,save_plot);
 
+    % structure
+    labels = get(handles.popSortingNeurons,'string');
+    n = length(labels);
+    labels{n+1} = 'structure';
+    set(handles.popSortingNeurons,'string',labels);
+    
+    % Write experiment
+    experiment.Plot.IDstructure = id;
+    experiment.Plot.Structure = structure;
+    experiment.Plot.ColorsStructure = xy_colors;
+    Write_Experiment(handles,experiment);
+        
     % Color black
     set(hObject,'ForeGroundColor',[0 0 0])
 end
