@@ -48,7 +48,7 @@ if save
     Save_Figure(['Network - ' name])
 end
 
-Set_Figure(['Single networks' name],[0 0 900 900]);
+Set_Figure(['Single networks ' name],[0 0 900 900]);
 rows = ceil(n_networks/2);
 for i = 1:n_networks
     id = find(structure(i,:));

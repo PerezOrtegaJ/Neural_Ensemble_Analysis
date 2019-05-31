@@ -44,10 +44,10 @@ end
 
 lims = [];
 if(nargin==1||isempty(xy))
-    nodes=length(adjacency);
-    xy=Get_Circular_XY(nodes);
-    lims = [-1.5 1.5];
-%        xy = Get_Force_XY(adjacency);
+%     nodes = length(adjacency);
+%     xy = Get_Circular_XY(nodes);
+%     lims = [-1.5 1.5];
+    xy = Get_Force_XY(adjacency);
 end
 
 C=length(adjacency);

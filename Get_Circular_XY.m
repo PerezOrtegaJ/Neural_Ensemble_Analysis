@@ -4,7 +4,7 @@ function [xy,step] = Get_Circular_XY(n,radio,offset)
 %
 %       [xy,step] = Get_Circular_XY(n,radio,offset)
 %
-% Pérez-Ortega Jesús - April 2018
+% Perez-Ortega Jesus - April 2018
 % modified April 2019
 
 switch(nargin)

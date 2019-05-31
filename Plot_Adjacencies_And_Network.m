@@ -50,6 +50,7 @@ function Plot_Adjacencies_And_Network(adjacency,adjacency_threshold,name,xy,node
     Plot_WU_Network(adjacency_threshold,xy,node_color,curved,edge_color,size_node,numbers)
     % Save Plot
     if(save_plot)
-        Save_Figure(name)
+        %Save_Figure(name)
+        Save_Figure(name,'eps')
     end
 end

@@ -70,7 +70,8 @@ function [slope,R2,intercept] = Plot_Degree_Distribution(adjacency,name,save)
     
     % Save
     if(save)
-        Save_Figure([name ' - Distribution']);
+        %Save_Figure([name ' - Distribution']);
+        Save_Figure([name ' - Distribution'],'eps');
     end
     
 end

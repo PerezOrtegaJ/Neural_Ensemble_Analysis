@@ -730,9 +730,9 @@ function btnGetFrequencies_Callback(hObject,~,handles)
     samples_per_second=experiment.Raster.SamplesPerSecond;
 
     % Get frequencies
-    frequencies = Get_Normalized_Instant_Freq(raster,samples_per_second,'zscore');
-%     bin=200*samples_per_second/1000;step=20*samples_per_second/1000;
-%     frequencies = Get_Zscore_From_Raster(raster,bin,step);
+    %frequencies = Get_Normalized_Instant_Freq(raster,samples_per_second,'zscore');
+    bin=200*samples_per_second/1000;step=20*samples_per_second/1000;
+    frequencies = Get_Zscore_From_Raster(raster,bin,step);
      
     set(handles.btnPlotFrequencies,'enable','on')
     
@@ -997,7 +997,7 @@ function btnGetVectors_Callback(hObject,~,handles)
 
     if max(vector_indices)>0
         % Create a matrix with all vector peaks
-        bin_network = 1; % bin_network = 25;
+        bin_network = 25; % bin_network = 25;
         vectors=Get_Peak_Vectors(data,vector_indices,vector_method,network_method,bin_network);
         count=size(vectors,1);
         
@@ -1265,32 +1265,6 @@ function btnGetNetworks_Callback(hObject,~,handles)
                 end
                 
                 tic
-                % Add raster with no peks to the raster peaks
-                %{
-                raster_noise = experiment.Peaks.RasterNoPeaks;
-                n_state=size(raster_state,2);
-                n_noise=size(raster_noise,2);
-                if(n_noise>n_state)
-                    id = randperm(n_noise);
-                    id = id(1:n_state);
-                    raster_noise = raster_noise(:,id);
-                end
-                raster_state = [raster_state raster_noise];
-                %}
-                % Get raster from states
-                %{
-                extra=500;
-                peaks = find(sequence_sorted==i);
-                n_peaks = length(peaks);
-                raster_state = [];
-                for j = 1:n_peaks
-                    id = find(indices==peaks(j));
-                    id = id(1)-extra:id(end)+extra;
-                    peak = raster(:,id);
-                    raster_state = [raster_state peak];
-                end
-                %}
-
                 % Get significant network
 %                 [state_network_th,state_network] = Get_Significant_Network_From_Raster(...
 %                     raster_state,bin,iterations,alpha,network_method,shuffle_method,single_th);
@@ -1415,7 +1389,7 @@ function btnGetNetworksByStimuli_Callback(hObject,~,handles)
     experiment.Network.StimulusSignificant = {};
                 
     bin = 1; %bin = 25;
-    iterations = 100;
+    iterations = 1000;
     alpha = 0.05;
     network_method = experiment.Peaks.NetworkMethod;
     shuffle_method = 'time_shift';
@@ -1428,18 +1402,32 @@ function btnGetNetworksByStimuli_Callback(hObject,~,handles)
         n_peaks = length(peaks);
 
         raster_state = [];
+        idx_stim = [];
         for j = 1:n_peaks
-            peak = raster(:,indices==peaks(j));
-            raster_state = [raster_state peak];
+            peak = indices==peaks(j);
+            raster_peak = raster(:,peak);
+            raster_state = [raster_state raster_peak];
+            idx_stim = [idx_stim; find(peak)];
         end
-        raster_state = experiment.Clustering.RasterStates{i};
+
+        % compute correlation
+        try
+            correlation = experiment.Plot.CorrelationStimulus(i,:);
+        catch
+            % compute correlation
+            for j = 1:n
+                D(j) = pdist([idx_stim';raster_state(j,:)],'correlation');
+            end
+            correlation = 1-D;
+            correlation(isnan(correlation)) = 0;
+            correlation(correlation<0) = 0;
+            experiment.Plot.CorrelationStimulus(i,:)=correlation;
+        end
 
         tic
         % Get significant network
-        [state_network_th,state_network] = Get_Significant_Network_From_Raster(...
-            raster_state,bin,iterations,alpha,network_method,shuffle_method,single_th);
-%               % Minimum two coactivations
-        %state_network_th(state_network < 2) = 0; 
+        [state_network_th,state_network] = Get_Significant_Network_From_Raster_And_Correlation(...
+            raster_state,correlation,bin,iterations,alpha,network_method,shuffle_method,single_th);
 
         % Write in experiment
         experiment.Network.Stimulus{i}=state_network;
@@ -1459,10 +1447,10 @@ function btnGetNetworksByStimuli_Callback(hObject,~,handles)
     network_th = logical(network);        
     
     % Write experiment
-    experiment.Network.UnionStimulus=network;
-    experiment.Network.UnionSignificantStimulus=network_th;
-    experiment.Network.IntersectionStimulus=core_network;
-    experiment.Network.IntersectionSignificantStimulus=core_network_th;
+    experiment.Network.UnionStimulus = network;
+    experiment.Network.UnionSignificantStimulus = network_th;
+    experiment.Network.IntersectionStimulus = core_network;
+    experiment.Network.IntersectionSignificantStimulus = core_network_th;
     Write_Experiment(handles,experiment);
     
     % Enable buttons
@@ -2127,6 +2115,8 @@ function popSortingNeurons_Callback(hObject, ~, handles)
             experiment.Plot.Correlation=correlation;
         case 'structure'
             cell_indices = experiment.Plot.IDstructure;
+        case 'structure by stimulus'
+            cell_indices = experiment.Plot.IDstructureStimulus;
         otherwise
             by_group=strsplit(sorting_method,' ');
             group=str2num(by_group{2});
@@ -2148,12 +2138,18 @@ function popSortingNeurons_Callback(hObject, ~, handles)
     set(hObject,'ForeGroundColor',[0 0 0])
 end
 
+%% Compute correlation by state
 function [correlation,cell_indices] = Compute_Correlation_by_State(experiment,group)
 
     disp('Computing correlation...')
     tic
     
-    coactivity = experiment.Coactivity.Coactivity;
+    if experiment.Peaks.DetectStimuli
+        signal = experiment.Peaks.Stimuli;
+    else
+        signal = experiment.Coactivity.Coactivity;
+    end
+    
     indices = experiment.Peaks.Indices;
     group_sequence = experiment.Clustering.SequenceSorted;
     neurons = experiment.Raster.Neurons;
@@ -2165,11 +2161,12 @@ function [correlation,cell_indices] = Compute_Correlation_by_State(experiment,gr
     for i=idx_group
         idx_indices(indices==i)=1;
     end
-    coactivity=coactivity.*idx_indices;
+    %signal = signal.*idx_indices;
+    signal = idx_indices;
 
     % compute correlation
     for i=1:neurons
-        D(i) = pdist([coactivity';raster(i,:)],'correlation');
+        D(i) = pdist([signal';raster(i,:)],'correlation');
     end
     correlation = 1-D;
     correlation(isnan(correlation)) = 0;
@@ -2252,7 +2249,7 @@ function btnPlotRaster_Callback(hObject,~,handles)
     if (strcmp(current_sorting,'no sorting'))
         ylabel('neurons')
     else
-        ylabel({'neuorns sorted by'; current_sorting})
+        ylabel({'neurons sorted by'; current_sorting})
     end
     
     % Save
@@ -2294,7 +2291,7 @@ function btnPlotFrequencies_Callback(hObject,~,handles)
     if (strcmp(current_sorting,'no sorting'))
         ylabel('neurons')
     else
-        ylabel({'neuorns sorted by'; current_sorting})
+        ylabel({'neurons sorted by'; current_sorting})
     end
     
     % Save
@@ -2402,7 +2399,7 @@ function btnPlotPeaks_Callback(hObject,~,handles)
     peak_number=false;
     Plot_Coactivity(coactivity,name,coactivity_threshold,samples_per_second);
     Plot_Peaks_On_Coactivity(coactivity,peak_indices,indices,...
-        noise_group,samples_per_second,peak_number)
+        noise_group,peak_number)
     if(experiment.Coactivity.ZScore)
         ylabel({'coactivity';'(z-score)'})
     end
@@ -2608,6 +2605,8 @@ function btnPlotNetworks_Callback(hObject,~,handles)
     name = strrep(experiment.Raster.Name,'_','-');
     network_th = experiment.Network.Significant;
     save_plot=get(handles.chkSavePlot,'value');
+    % old plot
+    %{
 %     n = experiment.Raster.Neurons;
 %     groups = experiment.Clustering.Groups;
 %     groups_to_plot=experiment.Clustering.GroupsToPlot;
@@ -2670,15 +2669,18 @@ function btnPlotNetworks_Callback(hObject,~,handles)
 %         end
 %     end
     %btnPlotRandomNetworks_Callback(hObject,[], handles)
+    %}
     
     [~, xy_colors, id, structure] = Get_XY_Ensembles(experiment.Network.StateSignificant);
     Plot_Ensembles(network_th(id,id),[],xy_colors,structure,name,save_plot);
 
-    % structure
+    % Set structure sorting
     labels = get(handles.popSortingNeurons,'string');
     n = length(labels);
-    labels{n+1} = 'structure';
-    set(handles.popSortingNeurons,'string',labels);
+    if ~strcmp(labels{n},'structure') && ~strcmp(labels{n-1},'structure')
+        labels{n+1} = 'structure';
+        set(handles.popSortingNeurons,'string',labels);
+    end
     
     % Write experiment
     experiment.Plot.IDstructure = id;
@@ -2698,73 +2700,33 @@ function btnPlotStimulusNetworks_Callback(hObject,~,handles)
     % Read experiment
     experiment = Read_Experiment(handles);
     name = strrep(experiment.Raster.Name,'_','-');
-    n = experiment.Raster.Neurons;
-    stimuli = experiment.Peaks.Stimuli;
-    groups = sum(unique(stimuli)>0);
-    
-    network = experiment.Network.UnionStimulus;
     network_th = experiment.Network.UnionSignificantStimulus;
-    core_network = experiment.Network.IntersectionStimulus;
-    core_network_th = experiment.Network.IntersectionSignificantStimulus;
-    
-    try
-        cell_indices = experiment.Plot.CurrentIndices;
-    catch
-        neurons = experiment.Raster.Neurons;
-        cell_indices = 1:neurons;
-        current_sorting = 'no sorting';
-        
-        % Write experiment
-        experiment.Plot.CurrentIndices = cell_indices;
-        experiment.Plot.CurrentSorting = current_sorting;
-        Write_Experiment(handles,experiment);
+    save_plot = get(handles.chkSavePlot,'value');
+   
+    % plot networks
+    [~, xy_colors, id, structure] = Get_XY_Ensembles(experiment.Network.StimulusSignificant);
+    Plot_Ensembles(network_th(id,id),[],xy_colors,structure,name,save_plot);
+
+    % Set structure sorting
+    labels = get(handles.popSortingNeurons,'string');
+    n = length(labels);
+    if ~strcmp(labels{n},'structure by stimulus') && ~strcmp(labels{n-1},'structure by stimulus')
+        labels{n+1} = 'structure by stimulus';
+        set(handles.popSortingNeurons,'string',labels);
     end
     
-    % Get coordinates of network
-%     xy = Get_Force_XY(network);
-    xy = Get_Circular_XY(n);
+    % Write experiment
+    experiment.Plot.IDstructureStimulus = id;
+    experiment.Plot.StructureStimulus = structure;
+    experiment.Plot.ColorsStructureStimulus = xy_colors;
+    Write_Experiment(handles,experiment);
         
-    % Plot network
-    save_plot=get(handles.chkSavePlot,'value');
-    
-    edge_color = [0.5 0.5 0.5];
-    node_color = [0.8 0.8 0.8];
-    network_plot = network.*network_th;
-    Plot_Adjacencies_And_Network(network(cell_indices,cell_indices),...
-        network_plot(cell_indices,cell_indices),['All networks (union) - ' name ' - stimulus'],...
-        xy,node_color,edge_color,save_plot)
-    lims_x = get(gca,'xlim');
-    lims_y = get(gca,'ylim');
-    
-    % Plot core network
-    network_plot = core_network.*core_network_th;
-    Plot_Adjacencies_And_Network(core_network(cell_indices,cell_indices),...
-        network_plot(cell_indices,cell_indices),...
-        ['Core network (intersection) - ' name ' - stimulus'],...
-        xy,node_color,edge_color,save_plot)  
-    xlim(lims_x)
-    ylim(lims_y)
-    
-    % Plot network of each state
-    colors = Read_Colors(groups);
-    for i=1:groups
-        state_network = experiment.Network.Stimulus{i};
-        state_network_th = experiment.Network.StimulusSignificant{i};
-
-        network_plot = state_network.*state_network_th;
-        Plot_Adjacencies_And_Network(state_network(cell_indices,cell_indices),...
-        network_plot(cell_indices,cell_indices),...
-        ['State ' num2str(i) ' network - ' name],...
-        xy,colors(i,:),edge_color,save_plot)
-
-        xlim(lims_x)
-        ylim(lims_y)
-    end
-    
     % Color black
     set(hObject,'ForeGroundColor',[0 0 0])
 end
 
+% Plot random
+%{
 function btnPlotRandomNetworks_Callback(hObject, ~, handles)
     % Color yellow
     set(hObject,'ForeGroundColor',[0.5 0.5 0]); pause(0.1); pause on
@@ -2866,6 +2828,7 @@ function btnPlotRandomNetworks_Callback(hObject, ~, handles)
     % Color black
     set(hObject,'ForeGroundColor',[0 0 0])
 end
+%}
 
 %% --- Save ---
 

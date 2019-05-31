@@ -173,12 +173,12 @@ end
 if fixed_width
     last_end = -1;
     end_before = false;
-    for i=idx'
+    for i = idx'
         if i==last_end+1
             if detect_peaks
-                data(i)=threshold-1;
+                data(i) = threshold-1;
             else
-                data(i)=threshold+1;
+                data(i) = threshold+1;
             end
             if end_before
                 end_before = false;
@@ -188,33 +188,34 @@ if fixed_width
         else
             if i>last_end
                 if fixed_width<0
-                    ini=i+fixed_width;
-                    fin=i-1;
-                    if(ini<0)
-                        ini=0;
+                    ini = i+fixed_width;
+                    fin = i-1;
+                    if ini<1
+                        ini = 1;
                     end    
-                    fixed_width_peak=ini:fin;
+                    fixed_width_peak = ini:fin;
                     last_end = fin+1;
                 else
                     fin = i+fixed_width-1;
                     if(fin>F)
-                        fin=F;
+                        fin = F;
                     end    
-                    fixed_width_peak=i:fin;
+                    fixed_width_peak = i:fin;
                     last_end = fin;
                 end
 
                 if detect_peaks
-                    data(fixed_width_peak)=threshold+1;
+                    data(fixed_width_peak) = threshold+1;
                     if fixed_width<0
-                        data(fixed_width_peak-fixed_width)=threshold-1;
+                        fixed_width_peak = fixed_width_peak+length(fixed_width_peak);
+                        data(fixed_width_peak) = threshold-1;
                     elseif sum(data(fixed_width_peak)<threshold)
                         end_before = true;
                     end
                 else
-                    data(fixed_width_peak)=threshold-1;
+                    data(fixed_width_peak) = threshold-1;
                     if fixed_width<0
-                        data(fixed_width_peak-fixed_width)=threshold+1;
+                        data(fixed_width_peak-fixed_width) = threshold+1;
                     elseif sum(data(fixed_width_peak)>threshold)
                         end_before = true;
                     end

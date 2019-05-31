@@ -11,7 +11,7 @@ function smooth_coactivity = Get_And_Filter_Coactivity(raster,bin)
     if(bin>1)
         % double smoothing
         smooth_coactivity=smooth(coactivity,bin);
-        %smooth_coactivity=smooth(smooth_coactivity,bin);
+        smooth_coactivity=smooth(smooth_coactivity,bin);
     else
         smooth_coactivity=coactivity;
     end

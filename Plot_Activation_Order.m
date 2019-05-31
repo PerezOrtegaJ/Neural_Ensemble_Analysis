@@ -29,7 +29,8 @@ end
 
 % Get sequences
 n = size(raster,1);
-sequences = randperm(n);
+%sequences = randperm(n);
+sequences = zeros(n);
 
 n_seqs = size(raster,2)/window;
 for i = 1:n_seqs
@@ -37,12 +38,13 @@ for i = 1:n_seqs
     fin = i * window;
     r = Reshape_Raster(raster(:,ini:fin),bin);
     sequence = Get_Network_Activation_Sequence(r,network);
-    rest = n-length(sequence);
-    if (rest>0)
-        resting = setdiff(1:n,sequence);
-        resting = resting(randperm(rest));
-        sequence = [sequence resting];
-    end
+    % get random seuqence of the resting spots
+%     rest = n-length(sequence);
+%     if rest>0
+%         resting = setdiff(1:n,sequence);
+%         resting = resting(randperm(rest));
+%         sequence = [sequence resting];
+%     end
     sequences(i,1:length(sequence)) = sequence;
 end
 
@@ -55,20 +57,20 @@ for i = 1:n
     entropy(i) = Get_Entropy(p);
 end
 % Normalize entropy
-%entropy = entropy/Get_Entropy(ones(1,n+1)); % with "neuron 0"
-entropy = entropy/Get_Entropy(ones(1,n)); % without "neuron 0"
+entropy = entropy/Get_Entropy(ones(1,n+1)); % with "neuron 0"
+%entropy = entropy/Get_Entropy(ones(1,n)); % without "neuron 0"
 
 Set_Figure(['Sequences - ' name],[0 0 500 800]);
 ax=subplot(6,1,1:4);
 imagesc(sequences_sorted); hold on
-%colormap(ax,[1 1 1;colors])% with "neuron 0"
-colormap(ax,colors) % without "neuron 0"
+colormap(ax,[1 1 1;colors])% with "neuron 0"
+%colormap(ax,colors) % without "neuron 0"
 ylabel('sequence #')
 title(name)
    
 ax=subplot(6,1,5);
-imagesc(probabilities,[0 0.5])
-set(gca,'ytick',[1 n+1],'yticklabel',[0 n])
+imagesc(probabilities(2:end,:),[0 0.5])
+%set(gca,'ytick',[1 n+1],'yticklabel',[0 n])
 colormap(ax,flipud(gray(100)))
 ylabel('neuron #')
 
