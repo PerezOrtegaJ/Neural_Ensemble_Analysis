@@ -32,9 +32,8 @@ function Plot_Adjacencies_And_Network(adjacency,adjacency_threshold,name,xy,node
         save_plot = false;
     end
 
-    curved = 0;
     size_node = 20;
-    numbers = false;
+    numbers = true;
     
     Set_Figure(name,[0 0 1000 300]);
     % Plot weighted adjacency matrix
@@ -47,7 +46,7 @@ function Plot_Adjacencies_And_Network(adjacency,adjacency_threshold,name,xy,node
     pbaspect([1 1 1])
     % Plot weighted network
     subplot(1,3,3)    
-    Plot_WU_Network(adjacency_threshold,xy,node_color,curved,edge_color,size_node,numbers)
+    Plot_Network(adjacency_threshold,'undirected',xy,node_color,edge_color,size_node,numbers);
     % Save Plot
     if(save_plot)
         %Save_Figure(name)

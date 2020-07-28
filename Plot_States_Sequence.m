@@ -18,8 +18,8 @@ function count_states = Plot_States_Sequence(sequence,noise_group,name,group_col
     end 
     groups=max(sequence);
     
-    Set_Figure(['States Sequence - ' name],[0 0 1220 200]);
-    Set_Axes('States sequence',[-.05 0 .85 1]); hold on
+    Set_Figure(['Ensemble Sequence - ' name],[0 0 1220 200]);
+    Set_Axes('Ensemble sequence',[-.05 0 .85 1]); hold on
     for i=noise_group
         sequence=sequence(sequence~=i);
     end
@@ -31,10 +31,10 @@ function count_states = Plot_States_Sequence(sequence,noise_group,name,group_col
             'linewidth',2)
     end
     plot(sequence,'-k')
-    ylim([0 groups+1]); ylabel('State')
+    ylim([0 groups+1]); ylabel('Ensemble')
     l=length(sequence);
-    xlim([0 l+1]); xlabel('# peak')
-    title(['States sequence - ' strrep(name,'_','-')])
+    xlim([0 l+1]); xlabel('Coactivation #')
+    title(['Ensemble sequence - ' strrep(name,'_','-')])
     
     Set_Axes('States count',[0.71 0.1 .15 .85]); hold on
     for i=1:max(sequence)

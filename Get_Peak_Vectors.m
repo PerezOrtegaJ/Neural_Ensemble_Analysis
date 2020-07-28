@@ -1,78 +1,82 @@
+function vectors = Get_Peak_Vectors(data,peak_indices,vector_method,connectivity_method,bin_network)
 % Get Peak Vectors
 % Join the vectors of the same peak.
 %
-% [XPeaks] = PeaksVectors_JP(X,Xid,mode)
+%           vectors = Get_Peak_Vectors(data,peak_indices,vector_method,connectivity_method,bin_network)
 %
 % Inputs
-% Data                  = data as F x C matrix (F = #frames, C = #cells)
-% PeaksIdx              = Fx1 vector containing the peaks indexes
-% Vector_method         = choose the method for build the vetor
-% Connectivity_Method   = connectivity method is used in case of
-%                         'Vector_method' is 'network'
+% data                  = data as F x C matrix (F = #frames, C = #cells)
+% peak_indices              = Fx1 vector containing the peaks indexes
+% vector_method         = choose the method for build the vetor ('sum','average','binary','network')
+% connectivity_method   = connectivity method is used in case of
+%                         'Vector_method' is 'network' ('coactivity','jaccard','pearson','kendall','spearman')
+% bin_network           = bin is used in case of 'Vector_method' is 'network'
 % 
 % Outputs
 % DataPeaks = data as matrix PxC (P = #peaks)
 %
+%           Default:    connectivity_method = 'none'; bin_network = 1;
+%
 % Pérez-Ortega Jesús E. - March 2018
 % Modified Nov 2018
 
-function vectors = Get_Peak_Vectors(data,peak_indices,vector_method,connectivity_method,bin_network)
-    if(nargin==4)
+switch nargin
+    case 4
         bin_network = 1;
-    elseif(nargin==3)
+    case 3
         connectivity_method = 'none';
         bin_network = 1;
-    end
+end
 
-    peaks=max(peak_indices);
-    if(peaks)
-        C=size(data,1);
-        switch(vector_method)
-            case 'sum'
-                vectors=zeros(peaks,C);
-                for i=1:peaks
-                    DataPeak_i=data(:,peak_indices==i);
-                    vectors(i,:)=sum(DataPeak_i,2);
-                end
-            case 'binary'
-                vectors=zeros(peaks,C);
-                for i=1:peaks
-                    DataPeak_i=data(:,peak_indices==i);
-                    vectors(i,:)=sum(DataPeak_i,2)>0;
-                end
-            case 'average'
-                vectors=zeros(peaks,C);
-                for i=1:peaks
-                    DataPeak_i=data(:,peak_indices==i);
-                    vectors(i,:)=mean(DataPeak_i,2);
-                end
-            case 'network'
-                vectors=zeros(peaks,C*(C-1)/2);
-                for i=1:peaks
-                    DataPeak_i=data(:,peak_indices==i);
-                    A=Get_Adjacency_From_Raster(Reshape_Raster(DataPeak_i,bin_network),...
-                        connectivity_method);
-                    
-                    % Get significant network
-                    %{
+peaks=max(peak_indices);
+if(peaks)
+    C=size(data,1);
+    switch(vector_method)
+        case 'sum'
+            vectors=zeros(peaks,C);
+            for i=1:peaks
+                DataPeak_i=data(:,peak_indices==i);
+                vectors(i,:)=sum(DataPeak_i,2);
+            end
+        case 'binary'
+            vectors=zeros(peaks,C);
+            for i=1:peaks
+                DataPeak_i=data(:,peak_indices==i);
+                vectors(i,:)=sum(DataPeak_i,2)>0;
+            end
+        case 'average'
+            vectors=zeros(peaks,C);
+            for i=1:peaks
+                DataPeak_i=data(:,peak_indices==i);
+                vectors(i,:)=mean(DataPeak_i,2);
+            end
+        case 'network'
+            vectors=zeros(peaks,C*(C-1)/2);
+            for i=1:peaks
+                DataPeak_i=data(:,peak_indices==i);
+                A=Get_Adjacency_From_Raster(Reshape_Raster(DataPeak_i,bin_network),...
+                    connectivity_method);
+
+                % Get significant network
+                %{
 %                     extra=250;
 %                     id = find(peak_indices==i);
 %                     id = id(1)-extra:id(end)+extra;
 %                     DataPeak_i = data(:,id);
-                    iterations = 20;
-                    alpha = 0.05;
-                    single_th = true;
-                    shuffle_method = 'time_shift';
-                    A = Get_Significant_Network_From_Raster(DataPeak_i,bin_network,iterations,...
-                        alpha,connectivity_method,shuffle_method,single_th);
-                    %}
-                    vectors(i,:)=squareform(A,'tovector');
-                end
-        end
-    else
-        disp('There are no data peaks!')
+                iterations = 20;
+                alpha = 0.05;
+                single_th = true;
+                shuffle_method = 'time_shift';
+                A = Get_Significant_Network_From_Raster(DataPeak_i,bin_network,iterations,...
+                    alpha,connectivity_method,shuffle_method,single_th);
+                %}
+                vectors(i,:)=squareform(A,'tovector');
+            end
     end
+else
+    disp('There are no data peaks!')
 end
+
 
 %{
     if (n_peaks)

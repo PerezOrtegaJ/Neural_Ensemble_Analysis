@@ -12,7 +12,7 @@ function Save_Raster_By_Windows(name,samples_per_second,window_sec,final_sec)
         Hold_Axes(['RasterAxes' name]);
         xlim([i-1 i+window_sec-1]*samples_per_second)
         Hold_Axes(['CoactiveAxes' name]);
-        xlim([i-1 i+window_sec-1])
+        xlim([i-1 i+window_sec-1]*samples_per_second)
         
         % Configure and save image
         Save_Figure([name '_' num2str(i-1,'%.2f') '-' num2str(i+window_sec-1,'%.2f') 'sec']);

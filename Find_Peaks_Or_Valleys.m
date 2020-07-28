@@ -1,16 +1,19 @@
-function [indices,widths,amplitudes,ini_fin] = Find_Peaks_Or_Valleys(data,threshold,join,...
+function [indices,widths,amplitudes,ini_fin_times] = Find_Peaks_Or_Valleys(data,threshold,join,...
 detect_peaks,minimum_width,fixed_width,ignore_ini_fin)
 % Find peaks from signal by a given threshold.
 %
-%   [indices,widths,amplitudes,ini_fin] = Find_Peaks_Or_Valleys(data,threshold,join,...
+%   [indices,widths,amplitudes,ini_fin_times] = Find_Peaks_Or_Valleys(data,threshold,join,...
 %    detect_peaks,minimum_width,fixed_width,ignore_ini_fin)
+%
+%           default: threshold = 0; join = true; detect_peaks = true;
+%                    minimum_width = 0; fixed_width = 0; ignore_ini_fin = false;
 %
 % Inputs
 % data = data as vector Fx1 (F = #frames)
 % threshold = threshold
 % join = set mode to get peaks (0 = each vector above threshold is a peak;
 %        1 = joining of adjacent vectors above the threshold is a peak)
-% 
+%
 % Outputs
 % indices = Fx1 vector containing the peak indices
 %
@@ -21,26 +24,37 @@ detect_peaks,minimum_width,fixed_width,ignore_ini_fin)
 % 5. Set the number at each peak (or valley)
 % 6. Join peaks or valleys                          - Optional
 %
-% ..:: by Jesus E. Perez-Ortega ::.. Feb-2012
-% JP debug 1-oct-2012
-% JP add 3rd input to join or not
-% modified March-2018
-% modified April-2018
-% modified May-2018
-% modified Jul-2018
-% modified Nov-2018
-% modified Dec-2018
-% modified Jan-2019
+% by Jesus E. Perez-Ortega, Feb-2012
+% last modification July-2019
 
-if(nargin==6)
-    ignore_ini_fin=false;
-elseif(nargin==5)
-    fixed_width = 0;
-    ignore_ini_fin=false;
-elseif(nargin==4)
-    minimum_width=0;
-    fixed_width=0;
-    ignore_ini_fin=false;
+switch nargin
+    case 6
+        ignore_ini_fin = false;
+    case 5      
+        ignore_ini_fin = false;
+        fixed_width = 0;
+    case 4
+        ignore_ini_fin = false;
+        fixed_width = 0;
+        minimum_width = 0;
+    case 3
+        ignore_ini_fin = false;
+        fixed_width = 0;
+        minimum_width = 0;
+        detect_peaks = true;
+    case 2
+        ignore_ini_fin = false;
+        fixed_width = 0;
+        minimum_width = 0;
+        detect_peaks = true;
+        join = true;
+    case 1
+        ignore_ini_fin = false;
+        fixed_width = 0;
+        minimum_width = 0;
+        detect_peaks = true;
+        join = true;
+        threshold = 0;
 end
 
 % 0. Correct signal data
@@ -59,12 +73,12 @@ if ~count
         disp('No peaks found!')
         widths = [];
         amplitudes = [];
-        ini_fin = [];
+        ini_fin_times = [];
     else
         disp('No valleys found!')
         widths = [];
         amplitudes = [];
-        ini_fin = [];
+        ini_fin_times = [];
     end
     return
 end
@@ -90,7 +104,7 @@ if ignore_ini_fin
 
     % Delete if ends above threshold
     last = F;
-    idx = flipud(idx);
+    idx = fliplr(idx);
     for i = idx
         if last==i
             if detect_peaks
@@ -250,11 +264,11 @@ end
 
 % Get peaks or valleys width
 widths = zeros(count,1);
-ini_fin = zeros(count,2);
+ini_fin_times = zeros(count,2);
 for i = 1:count
     id = find(indices==i);
-    ini_fin(i,1) = id(1);
-    ini_fin(i,2) = id(end);
+    ini_fin_times(i,1) = id(1);
+    ini_fin_times(i,2) = id(end);
     widths(i) = length(id);
 end
 

@@ -3,6 +3,8 @@ function [sorted,sorted_id] = Sort_Raster(raster,direction)
 %
 %   [sorted,sorted_id] = Sort_Raster(raster,direction)
 %
+%   default: direction = 'descend'
+%
 % Jesús Pérez-Ortega - Dic 2018
 % Modified Jan 2019
 

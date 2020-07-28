@@ -1,51 +1,63 @@
+function zscoreCoactivity = Z_Score_Coactivity(coactivity,zscoreWindow,onlyAvg)
 % Get Z-score of coactivity with an specific time window
 %
+%       zscoreCoactivity = Z_Score_Coactivity(coactivity,zscoreWindow,onlyAvg)
 %
-% By Jes?s P?rez-Ortega jan-2018
+%       zscoreWindow, compute z-score by windows
+%       onlyAvg, do the average substraction but not the standard deviation
+%       division
+%
+%       default: zscoreWindow = length(coactivity); onlyMean = false
+%
+% By Jesus Perez-Ortega jan-2018
 % modified april-2018
 % modified august-2018
+% modified Apr 2020 (cleaning code)
 
-function z_score_coactivity = Z_Score_Coactivity(coactivity,zscore_window,only_mean)
-    if(nargin<2)
-        zscore_window=length(coactivity);
-        only_mean=false;
+if nargin == 1
+    zscoreWindow = length(coactivity);
+    onlyAvg = false;
+end
+
+if zscoreWindow==0
+    zscoreWindow = length(coactivity);
+end
+
+zscoreCoactivity = zeros(size(coactivity));
+F = length(coactivity);
+
+if F>zscoreWindow
+    n_final = round(F/zscoreWindow);
+    for i = 1:n_final
+        inicio = zscoreWindow*(i-1)+1;
+        fin = inicio+zscoreWindow-1;
+        if fin>F
+            fin = F;
+        end
+        
+        if onlyAvg
+            zscoreCoactivity(inicio:fin) = coactivity(inicio:fin)-mean(coactivity(inicio:fin));
+        else
+            zscoreCoactivity(inicio:fin) = (coactivity(inicio:fin)-mean(coactivity(inicio:fin)))...
+                /std(coactivity(inicio:fin));
+        end
     end
     
-    if(zscore_window==0)
-        zscore_window=length(coactivity);
-    end
-
-    z_score_coactivity=zeros(size(coactivity));
-    F=length(coactivity);
-    if(F>zscore_window)
-        n_final=round(F/zscore_window);
-        for i=1:n_final
-            inicio=zscore_window*(i-1)+1;
-            fin=inicio+zscore_window-1;
-            if(fin>F)
-                fin=F;
-            end
-            if(only_mean)
-                z_score_coactivity(inicio:fin)=coactivity(inicio:fin)-mean(coactivity(inicio:fin));
-            else
-                z_score_coactivity(inicio:fin)=(coactivity(inicio:fin)-mean(coactivity(inicio:fin)))/std(coactivity(inicio:fin));
-            end
-        end
-        n_Smooth=length(z_score_coactivity);
-        if(fin<n_Smooth)
-            inicio=fin+1;
-            fin=n_Smooth;
-            if(only_mean)
-                z_score_coactivity(inicio:fin)=coactivity(inicio:fin)-mean(coactivity(inicio:fin));
-            else
-                z_score_coactivity(inicio:fin)=(coactivity(inicio:fin)-mean(coactivity(inicio:fin)))/std(coactivity(inicio:fin));
-            end            
-        end
-    else
-        if(only_mean)
-            z_score_coactivity=coactivity-mean(coactivity);
+    nSmooth = length(zscoreCoactivity);
+    if fin<nSmooth
+        inicio = fin+1;
+        fin = nSmooth;
+        if onlyAvg
+            zscoreCoactivity(inicio:fin) = coactivity(inicio:fin)-mean(coactivity(inicio:fin));
         else
-            z_score_coactivity=(coactivity-mean(coactivity))/std(coactivity);
-        end
+            zscoreCoactivity(inicio:fin) = (coactivity(inicio:fin)-mean(coactivity(inicio:fin)))...
+                /std(coactivity(inicio:fin));
+        end            
+    end
+else
+    if onlyAvg
+        zscoreCoactivity = coactivity-mean(coactivity);
+    else
+        zscoreCoactivity = (coactivity-mean(coactivity))/std(coactivity);
     end
 end
